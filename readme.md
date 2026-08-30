@@ -1,6 +1,6 @@
-### Chasm Save Editor
+### Chasm[2018] Save Editor
 
-A simple save editor for Chasm written in Python
+A simple save editor for Chasm[2018] written in Python
 
 It can edit item attributes(quantity, etc.) and equipment attributes(rarity, etc.) with console interface
 
