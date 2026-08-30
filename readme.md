@@ -2,6 +2,8 @@
 
 A simple save editor for Chasm[2018] written in Python
 
+[Chasm](https://store.steampowered.com/app/312200/Chasm/)
+
 It can edit item attributes(quantity, etc.) and equipment attributes(rarity, etc.) with console interface
 
 *Always remember to backup your save before editing, this may corrupt your save*
