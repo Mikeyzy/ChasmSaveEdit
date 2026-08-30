@@ -19,6 +19,7 @@ StructEquipmentAttributes = struct.Struct('<9I')
 _SPECIAL_ITEM_EXTRA_DATA_SIZE = {
 	'sword_assassins': 8,
 	'head_birdhat': 20,
+	'head_swordhat': 20,
 }
 
 def bytesToHexString(data: bytes):
