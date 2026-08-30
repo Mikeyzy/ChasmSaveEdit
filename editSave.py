@@ -36,6 +36,7 @@ MENU_ACTION = [
 	'1.Edit Selected Item',
 	'2.Duplicate Selected Item',
 	'3.Remove Selected Item',
+	'4.Move Selected Item',
 	'b.Back',
 ]
 
@@ -200,7 +201,7 @@ if __name__ == '__main__':
 								break
 							elif sIn.lower() == 's':
 								# sort item
-								lItemToEdit.sort(key=lambda x: x.sId)
+								lItemToEdit.sort(key=lambda x: (x.sId, x.iQuantity, 0 if isinstance(x, _common.Item) else x.iRarity))
 								continue
 							try:
 								iSelected = int(sIn)
@@ -363,10 +364,26 @@ if __name__ == '__main__':
 							elif sIn == '2':
 								# duplicate item
 								lItemToEdit.append(selectedItem.copy())
+								print(f'Duplicated item {selectedItem}')
 							elif sIn == '3':
 								# remove item
-								lItemToEdit.pop(iSelected)
-								print(f'Removed item {selectedItem}')
+								sIn = input('>>> Are you sure? (Y/n):')
+								if sIn.lower() == 'y':
+									lItemToEdit.pop(iSelected)
+									print(f'Removed item {selectedItem}')
+								else:
+									print('Canceled')
+							elif sIn == '4':
+								# move item
+								sIn = input('>>> New Index: ')
+								if sIn.isdigit():
+									iNew = int(sIn)
+									if 0 <= iNew < len(lItemToEdit) and iNew != iSelected:
+										# valid index
+										item = lItemToEdit.pop(iSelected)
+										lItemToEdit.insert(iNew, item)
+								else:
+									print('Invalid input')
 		else:
 			print('No file loaded')
 			time.sleep(1)
