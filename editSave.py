@@ -272,7 +272,7 @@ if __name__ == '__main__':
 												print('Invalid input')
 									elif isinstance(selectedItem, _common.Equipment):
 										# display equipment attributes
-										print(f'->Item Id: {selectedItem}')
+										print(f'->Item Id: {selectedItem.sId}')
 										print(f'->Rarity: {selectedItem.iRarity}')
 										print(f'->CON[Constitution]: {selectedItem.iConstitution}')
 										print(f'->HP [Health]: {selectedItem.iHealth}')
@@ -359,7 +359,7 @@ if __name__ == '__main__':
 													print('Invalid input')
 											else:
 												print('Invalid input')
-									
+								clearTerminal()
 							elif sIn == '2':
 								# duplicate item
 								lItemToEdit.append(selectedItem.copy())
