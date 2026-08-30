@@ -4,6 +4,8 @@ A simple save editor for Chasm written in Python
 
 It can edit item attributes(quantity, etc.) and equipment attributes(rarity, etc.) with console interface
 
+*Always remember to backup your save before editing, this may corrupt your save*
+
 minimun python version: 3.10 (type annotations support)
 
 pywin32 module is optional for better file dialog support

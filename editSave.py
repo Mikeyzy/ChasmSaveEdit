@@ -6,7 +6,7 @@ _WIN32API_AVAILABLE = False
 HOMEPATH = os.environ.get('USERPROFILE', os.environ.get('HOME', ''))
 CHASM_SAVE_DIR = os.path.join(HOMEPATH, 'Documents', 'Chasm')
 _LAST_OPENED_DIR = None
-_VERSION = '1.0'
+_VERSION = '1.01'
 
 try:
 	import win32ui, win32con
@@ -124,7 +124,9 @@ if __name__ == '__main__':
 			if sIn == '2':
 				# save file
 				if _WIN32API_AVAILABLE:
-					newFileName = os.path.basename(save._pathCurrentFile).replace('.sav', '_edited.sav')
+					newFileName = os.path.basename(save._pathCurrentFile)
+					if '.sav' in newFileName.lower():
+						newFileName = newFileName[:newFileName.index('.sav')] + '_edited.sav'
 					dialog = win32ui.CreateFileDialog(
 						0,
 						'.sav',
