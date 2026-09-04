@@ -5,8 +5,8 @@ import _common
 _WIN32API_AVAILABLE = False
 HOMEPATH = os.environ.get('USERPROFILE', os.environ.get('HOME', ''))
 CHASM_SAVE_DIR = os.path.join(HOMEPATH, 'Documents', 'Chasm')
-_LAST_OPENED_DIR = None
-_VERSION = '1.01'
+_LAST_OPENED_DIR = ''
+_VERSION = '1.02'
 
 try:
 	import win32ui, win32con
@@ -14,11 +14,19 @@ try:
 except ImportError:
 	pass
 
+try:
+	import json5 as json
+except ImportError:
+	import json
+
 
 MENU_INIT = [
 	'1.Load File',
 	'2.Save File',
 	'3.Edit Items',
+	'4.Export items to JSON',
+	'5.Import items from JSON',
+	'6.Import items from JSON (Override)',
 	'x.Exit',
 ]
 
@@ -75,6 +83,37 @@ def selectMenuOptions(menu: list, title: str = '') -> str:
 		print(line)
 	return input('Option Selected: ')
 
+def getOpenSaveFileName(bOpen=False, sTitle: str = '', sDefaultName: str = '', sDefaultExt: str = '', sInitDir: str = '', sFilter: str = 'All Files (*.*)|*.*||') -> str:
+	sIn = ''
+	if _WIN32API_AVAILABLE:
+		if bOpen:
+			flags = win32con.OFN_FILEMUSTEXIST | win32con.OFN_PATHMUSTEXIST
+			if len(sTitle) == 0:
+				sTitle = 'Open File'
+		else:
+			flags = win32con.OFN_OVERWRITEPROMPT
+			if len(sTitle) == 0:
+				sTitle = 'Save File'
+		dialog = win32ui.CreateFileDialog(
+			bOpen,
+			sDefaultExt,
+			sDefaultName,
+			flags,
+			sFilter,
+		)
+		if len(sInitDir):
+			dialog.SetOFNInitialDir(sInitDir)
+		dialog.SetOFNTitle(sTitle)
+		if dialog.DoModal() == win32con.IDOK:
+			sIn = dialog.GetPathName()
+	else:
+		if bOpen:
+			prompt = '>>> Open file path: '
+		else:
+			prompt = '>>> Save file path: '
+		sIn = input(prompt)
+	return sIn
+
 if __name__ == '__main__':
 	print(f"\033]0;Chasm Save Editor\007", end="", flush=True)
 	save = _common.SaveData()
@@ -91,24 +130,25 @@ if __name__ == '__main__':
 			break
 		elif sIn == '1':
 			# load file
-			if _WIN32API_AVAILABLE:
-				dialog = win32ui.CreateFileDialog(
-					1,
-					'.sav',
-					'*.sav',
-					win32con.OFN_FILEMUSTEXIST | win32con.OFN_PATHMUSTEXIST,
-					"Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||",
-				)
-				if os.path.isdir(CHASM_SAVE_DIR):
-					dialog.SetOFNInitialDir(_LAST_OPENED_DIR or CHASM_SAVE_DIR)
-				dialog.SetOFNTitle('Open Chasm Save File')
-				if dialog.DoModal() == win32con.IDOK:
-					sIn = dialog.GetPathName()
-					_LAST_OPENED_DIR = os.path.dirname(sIn)
-				else:
-					continue
-			else:
-				sIn = input('Load File Path: ')
+			sIn = getOpenSaveFileName(True, 'Open Chasm Save File', '*.sav', '.sav', CHASM_SAVE_DIR, 'Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||')
+			# if _WIN32API_AVAILABLE:
+			# 	dialog = win32ui.CreateFileDialog(
+			# 		1,
+			# 		'.sav',
+			# 		'*.sav',
+			# 		win32con.OFN_FILEMUSTEXIST | win32con.OFN_PATHMUSTEXIST,
+			# 		"Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||",
+			# 	)
+			# 	if os.path.isdir(CHASM_SAVE_DIR):
+			# 		dialog.SetOFNInitialDir(_LAST_OPENED_DIR or CHASM_SAVE_DIR)
+			# 	dialog.SetOFNTitle('Open Chasm Save File')
+			# 	if dialog.DoModal() == win32con.IDOK:
+			# 		sIn = dialog.GetPathName()
+			# 		_LAST_OPENED_DIR = os.path.dirname(sIn)
+			# 	else:
+			# 		continue
+			# else:
+			# 	sIn = input('Load File Path: ')
 			try:
 				print(f'Load File: {sIn}')
 				_common.ERROR_STATUS = 0
@@ -119,36 +159,38 @@ if __name__ == '__main__':
 					print(f'Error occurred when loading file')
 					input('Press Enter to continue...')
 			except Exception as e:
+				# raise
 				print(f'Error occurred when loading file')
 				input('Press Enter to continue...')
 		elif len(save._pathCurrentFile):
 			if sIn == '2':
 				# save file
-				if _WIN32API_AVAILABLE:
-					newFileName = os.path.basename(save._pathCurrentFile)
-					if '.sav' in newFileName.lower():
-						newFileName = newFileName[:newFileName.index('.sav')] + '_edited.sav'
-					dialog = win32ui.CreateFileDialog(
-						0,
-						'.sav',
-						newFileName,
-						win32con.OFN_OVERWRITEPROMPT,
-						"Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||",
-					)
-					if _LAST_OPENED_DIR:
-						dialog.SetOFNInitialDir(_LAST_OPENED_DIR)
-					dialog.SetOFNTitle('Save Chasm Save File')
-					if dialog.DoModal() == win32con.IDOK:
-						sIn = dialog.GetPathName()
-					else:
-						continue
-				else:
-					sIn = input('>>> Save file path: ')
+				newFileName = os.path.basename(save._pathCurrentFile)
+				if '.sav' in newFileName.lower():
+					newFileName = newFileName[:newFileName.index('.sav')] + '_edited.sav'
+				getOpenSaveFileName(False, 'Save Chasm Save File', newFileName, '.sav', _LAST_OPENED_DIR, 'Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||')
+				# if _WIN32API_AVAILABLE:
+				# 	dialog = win32ui.CreateFileDialog(
+				# 		0,
+				# 		'.sav',
+				# 		newFileName,
+				# 		win32con.OFN_OVERWRITEPROMPT,
+				# 		"Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||",
+				# 	)
+				# 	if _LAST_OPENED_DIR:
+				# 		dialog.SetOFNInitialDir(_LAST_OPENED_DIR)
+				# 	dialog.SetOFNTitle('Save Chasm Save File')
+				# 	if dialog.DoModal() == win32con.IDOK:
+				# 		sIn = dialog.GetPathName()
+				# 	else:
+				# 		continue
+				# else:
+				# 	sIn = input('>>> Save file path: ')
 				try:
 					save.saveFile(sIn)
 				except Exception as e:
 					print(f'Error occurred when saving file')
-			if sIn == '3':
+			elif sIn == '3':
 				# edit items
 				while 1:
 					# menu select item category
@@ -384,6 +426,26 @@ if __name__ == '__main__':
 										lItemToEdit.insert(iNew, item)
 								else:
 									print('Invalid input')
+			elif sIn == '4':
+				# export json file
+				pathFile = getOpenSaveFileName(bOpen=False, sTitle='Save JSON File', sDefaultExt='.json', sFilter='JSON Files (*.json)|*.json|All Files (*.*)|*.*||')
+				if len(pathFile) > 0:
+					os.makedirs(os.path.dirname(pathFile), exist_ok=True)
+					with open(pathFile, 'w', encoding='utf-8') as file:
+						file.write(json.dumps(save.toJson(), indent='\t'))
+						print('Save data exported to JSON')
+			elif sIn in ('5', '6'):
+				# import json file
+				override = (sIn == '6')
+				if override:
+					if input('>>> WARNING: This will override items in current save file. Continue? (Y/n):').lower() != 'y':
+						continue
+				pathFile = getOpenSaveFileName(bOpen=True, sTitle='Open JSON File', sDefaultExt='.json', sFilter='JSON Files (*.json)|*.json|All Files (*.*)|*.*||')
+				if os.path.isfile(pathFile):
+					with open(pathFile, 'r', encoding='utf-8') as file:
+						dItems = json.load(file)
+						itemLoaded = save.loadJson(dItems, override)
+						print(f'Loaded {itemLoaded} items')
 		else:
 			print('No file loaded')
 			time.sleep(1)

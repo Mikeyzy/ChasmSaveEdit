@@ -92,6 +92,20 @@ class Item:
 	def __str__(self):
 		return f'Item[{self.sId}] x{self.iQuantity}, {self.iReserved1}, {self.iReserved2}, {self.bExtraData}'
 
+	def toJson(self):
+		dOut = {'id': self.sId, 'quantity': self.iQuantity}
+		if self.iReserved1 != 0:
+			dOut['reserved1'] = self.iReserved1
+		if self.iReserved2 != 0:
+			dOut['reserved2'] = self.iReserved2
+		if len(self.bExtraData):
+			dOut['extraData'] = bytesToHexString(self.bExtraData)
+		return dOut
+
+	@classmethod
+	def fromJson(cls, data: dict):
+		return cls(data['id'], data['quantity'], data.get('reserved1', 0), data.get('reserved2', 0), hexStringToBytes(data.get('extraData', '')))
+
 	@staticmethod
 	def currentBlockSize(data):
 		i = 1
@@ -199,6 +213,25 @@ class Equipment:
 	def __str__(self):
 		return f'Equipment[{self.sId}] Rarity {self.iRarity}, CON {self.iConstitution}, HP {self.iHealth}, INT {self.iIntelligence}, LCK {self.iLuck}, MP {self.iMana} STR {self.iStrength}, {self.iReserved}, {self.bExtraData}'
 
+	def toJson(self):
+		dOut = {'id': self.sId, 'rarity': self.iRarity}
+		if self.iRarity > 0:
+			dOut['constitution'] = self.iConstitution
+			dOut['health'] = self.iHealth
+			dOut['intelligence'] = self.iIntelligence
+			dOut['luck'] = self.iLuck
+			dOut['mana'] = self.iMana
+			dOut['strength'] = self.iStrength
+		if self.iReserved != 0:
+			dOut['reserved'] = self.iReserved
+		if len(self.bExtraData):
+			dOut['extraData'] = bytesToHexString(self.bExtraData)
+		return dOut
+
+	@classmethod
+	def fromJson(cls, data: dict):
+		return cls(data['id'], data['rarity'], data.get('constitution', 0), data.get('health', 0), data.get('intelligence', 0), data.get('luck', 0), data.get('mana', 0), data.get('strength', 0), data.get('reserved', 0), hexStringToBytes(data.get('extraData', '')))
+
 	@staticmethod
 	def currentBlockSize(data: bytes):
 		i = 1
@@ -264,11 +297,21 @@ class SaveData:
 			self.lAccessory.clear()
 			self.lItem.clear()
 			self.bTail = b''
-			iWeapon = bSaveFile.index(BYTES_NULL_ITEM)
+			# find all null items
+			lNullIndex = []
+			i = 0
+			while i != -1:
+				i = bSaveFile.find(BYTES_NULL_ITEM, i)
+				if i != -1:
+					lNullIndex.append(i)
+					i += 1
+			print(f'Null item indexes: {lNullIndex}')
+			# iWeapon = bSaveFile.index(BYTES_NULL_ITEM)
+			iWeapon = lNullIndex[-5]
 			iWeaponCount = int.from_bytes(bSaveFile[iWeapon-4:iWeapon], 'little')
 			self.bHead = bSaveFile[:iWeapon-4]
 			print(f'Weapon data start: {iWeapon}, count: {iWeaponCount}')
-			bWeaponData = bSaveFile[iWeapon:iWeapon+Equipment.maxBlockSize()*iWeaponCount]
+			bWeaponData = bSaveFile[iWeapon:iWeapon+Equipment.maxBlockSize()*(iWeaponCount+1)]
 			i = 0
 			for _ in range(iWeaponCount):
 				sz = Equipment.currentBlockSize(bWeaponData[i:])
@@ -283,7 +326,7 @@ class SaveData:
 			iSpellCount = int.from_bytes(bSaveFile[iWeapon+i:iWeapon+i+4], 'little')
 			iSpell = iWeapon+i+4
 			print(f'Spell data start: {iSpell}, count: {iSpellCount}')
-			bSpellData = bSaveFile[iSpell:iSpell+Item.maxBlockSize()*iSpellCount]
+			bSpellData = bSaveFile[iSpell:iSpell+Item.maxBlockSize()*(iSpellCount+1)]
 			i = 0
 			for _ in range(iSpellCount):
 				sz = Item.currentBlockSize(bSpellData[i:])
@@ -298,7 +341,7 @@ class SaveData:
 			iHelmetCount = int.from_bytes(bSaveFile[iSpell+i:iSpell+i+4], 'little')
 			iHelmet = iSpell+i+4
 			print(f'Helmet data start: {iHelmet}, count: {iHelmetCount}')
-			bHelmetData = bSaveFile[iHelmet:iHelmet+Equipment.maxBlockSize()*iHelmetCount]
+			bHelmetData = bSaveFile[iHelmet:iHelmet+Equipment.maxBlockSize()*(iHelmetCount+1)]
 			i = 0
 			for _ in range(iHelmetCount):
 				sz = Equipment.currentBlockSize(bHelmetData[i:])
@@ -313,7 +356,7 @@ class SaveData:
 			iArmorCount = int.from_bytes(bSaveFile[iHelmet+i:iHelmet+i+4], 'little')
 			iArmor = iHelmet+i+4
 			print(f'Armor data start: {iArmor}, count: {iArmorCount}')
-			bArmorData = bSaveFile[iArmor:iArmor+Equipment.maxBlockSize()*iArmorCount]
+			bArmorData = bSaveFile[iArmor:iArmor+Equipment.maxBlockSize()*(iArmorCount+1)]
 			i = 0
 			for _ in range(iArmorCount):
 				sz = Equipment.currentBlockSize(bArmorData[i:])
@@ -328,7 +371,7 @@ class SaveData:
 			iAccessoryCount = int.from_bytes(bSaveFile[iArmor+i:iArmor+i+4], 'little')
 			iAccessory = iArmor+i+4
 			print(f'Accessory data start: {iAccessory}, count: {iAccessoryCount}')
-			bAccessoryData = bSaveFile[iAccessory:iAccessory+Equipment.maxBlockSize()*iAccessoryCount]
+			bAccessoryData = bSaveFile[iAccessory:iAccessory+Equipment.maxBlockSize()*(iAccessoryCount+1)]
 			i = 0
 			for _ in range(iAccessoryCount):
 				sz = Equipment.currentBlockSize(bAccessoryData[i:])
@@ -343,7 +386,7 @@ class SaveData:
 			iItemCount = int.from_bytes(bSaveFile[iAccessory+i:iAccessory+i+4], 'little')
 			iItem = iAccessory+i+4
 			print(f'Item data start: {iItem}, count: {iItemCount}')
-			bItemData = bSaveFile[iItem:iItem+Item.maxBlockSize()*iItemCount]
+			bItemData = bSaveFile[iItem:iItem+Item.maxBlockSize()*(iItemCount+1)]
 			i = 0
 			for _ in range(iItemCount):
 				sz = Item.currentBlockSize(bItemData[i:])
@@ -422,5 +465,67 @@ class SaveData:
 			file.write(self.bTail)
 			file.flush()
 		print(f'Done')
+
+	def toJson(self) -> dict:
+		dOut = {}
+		if len(self.lWeapon):
+			dOut['weapon'] = [item.toJson() for item in self.lWeapon]
+		if len(self.lSpell):
+			dOut['spell'] = [item.toJson() for item in self.lSpell]
+		if len(self.lHelmet):
+			dOut['helmet'] = [item.toJson() for item in self.lHelmet]
+		if len(self.lArmor):
+			dOut['armor'] = [item.toJson() for item in self.lArmor]
+		if len(self.lAccessory):
+			dOut['accessory'] = [item.toJson() for item in self.lAccessory]
+		if len(self.lItem):
+			dOut['item'] = [item.toJson() for item in self.lItem]
+		return dOut
+
+	def loadJson(self, dData:dict, override:bool) -> int:
+		itemLoaded = 0
+		lWeapon = dData.get('weapon', [])
+		if len(lWeapon):
+			if override:
+				self.lWeapon.clear()
+			for item in lWeapon:
+				self.lWeapon.append(Equipment.fromJson(item))
+				itemLoaded += 1
+		lSpell = dData.get('spell', [])
+		if len(lSpell):
+			if override:
+				self.lSpell.clear()
+			for item in lSpell:
+				self.lSpell.append(Item.fromJson(item))
+				itemLoaded += 1
+		lHelmet = dData.get('helmet', [])
+		if len(lHelmet):
+			if override:
+				self.lHelmet.clear()
+			for item in lHelmet:
+				self.lHelmet.append(Equipment.fromJson(item))
+				itemLoaded += 1
+		lArmor = dData.get('armor', [])
+		if len(lArmor):
+			if override:
+				self.lArmor.clear()
+			for item in lArmor:
+				self.lArmor.append(Equipment.fromJson(item))
+				itemLoaded += 1
+		lAccessory = dData.get('accessory', [])
+		if len(lAccessory):
+			if override:
+				self.lAccessory.clear()
+			for item in lAccessory:
+				self.lAccessory.append(Equipment.fromJson(item))
+				itemLoaded += 1
+		lItem = dData.get('item', [])
+		if len(lItem):
+			if override:
+				self.lItem.clear()
+			for item in lItem:
+				self.lItem.append(Item.fromJson(item))
+				itemLoaded += 1
+		return itemLoaded
 
 __all__ = ['BYTES_NULL_ITEM', 'bytesToHexString', 'hexStringToBytes', 'Item', 'Equipment', 'SaveData']
