@@ -168,7 +168,7 @@ if __name__ == '__main__':
 				newFileName = os.path.basename(save._pathCurrentFile)
 				if '.sav' in newFileName.lower():
 					newFileName = newFileName[:newFileName.index('.sav')] + '_edited.sav'
-				getOpenSaveFileName(False, 'Save Chasm Save File', newFileName, '.sav', _LAST_OPENED_DIR, 'Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||')
+				sIn = getOpenSaveFileName(False, 'Save Chasm Save File', newFileName, '.sav', _LAST_OPENED_DIR, 'Chasm Save File (*.sav)|*.sav|All Files (*.*)|*.*||')
 				# if _WIN32API_AVAILABLE:
 				# 	dialog = win32ui.CreateFileDialog(
 				# 		0,
@@ -187,7 +187,8 @@ if __name__ == '__main__':
 				# else:
 				# 	sIn = input('>>> Save file path: ')
 				try:
-					save.saveFile(sIn)
+					if len(sIn):
+						save.saveFile(sIn)
 				except Exception as e:
 					print(f'Error occurred when saving file')
 			elif sIn == '3':
